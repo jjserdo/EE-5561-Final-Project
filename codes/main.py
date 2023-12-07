@@ -24,7 +24,7 @@ from net import *
 
 #### SETUP MODEL ####
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = deepResUnet()
+model = deepResUnet(3,1)
 model.to(device)
 
 # define the loss function

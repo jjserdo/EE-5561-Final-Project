@@ -14,15 +14,15 @@ import torch.nn as nn
 import numpy as np
 
 #### Residual Block
-def res_block(in_channels, out_channels, first=False):
+def res_block(in_channels, out_channels, strides, first=False):
     layers = []
     if first:
         layers.append(nn.BatchNorm2d())
         layers.append(nn.ReLU())
-    layers.append(nn.Conv2d(in_channels))
+    layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=strides[0]))
     layers.append(nn.BatchNorm2d())
     layers.append(nn.ReLU())
-    layers.append(nn.Conv2d(out_channels))
+    layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=strides[1]))
     
     return nn.Sequential(*layers)
         
@@ -30,15 +30,15 @@ def res_block(in_channels, out_channels, first=False):
 class deepResUnet(nn.Module):
     def __init__(self, in_channels, num_classes):
         super().__init__()
-        self.encoding1 = res_block(in_channels, first=True)
-        self.encoding2 = res_block()
-        self.encoding2 = res_block()
-        self.bridge = res_block()
-        self.decoding1 = res_block()
-        self.decoding2 = res_block()
-        self.decoding2 = res_block()
+        self.encoding1 = res_block(in_channels, 64, [1,1], first=True)
+        self.encoding2 = res_block(64, 128, [2,1])
+        self.encoding2 = res_block(128, 256, [2,1])
+        self.bridge = res_block(256, 512, [2,1])
+        self.decoding1 = res_block(512, 256, [1,1])
+        self.decoding2 = res_block(256, 128, [1,1])
+        self.decoding3 = res_block(128, 64, [1,1])
         self.upsamp = nn.Upsample()
-        self.conv = nn.Conv2d()
+        self.conv = nn.Conv2d(1,1)
         self.sigmoid = nn.Sigmoid()
            
     def forward(self, x):
