@@ -39,13 +39,16 @@ class deepResUnet(nn.Module):
         self.decoding2 = res_block(256, 128, [1,1])
         self.decoding3 = res_block(128, 64, [1,1])
         self.upsamp = nn.Upsample(scale_factor=2, mode='bilinear')                  #I PUT SCALE_FACTOR=2 BECAUSE IT WAS LIKE THIS IN THE TUTORIAL, NOT SURE IF SHOOULD BE THAT HERE.
-        self.conv = nn.Conv2d(64,num_classes, kernel_size=1)
+        self.convlast = nn.Conv2d(64,num_classes, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
+
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
            
     def forward(self, x):
         # encoding
         a1 = self.encoding1(x)
-        y1 = self.encoding1(x) + x              #ERROR IN THIS LINE. CHECK DIMENSIONS AND CHANGE THE ENCODING BLOCKS
+        #y1 = self.encoding1(x) + x              #ERROR IN THIS LINE. CHECK DIMENSIONS AND CHANGE THE ENCODING BLOCKS
+        y1 = self.encoding1(x) + self.conv1(x)
         y2 = self.encoding2(y1) + y1
         y3 = self.encoding3(y2) + y2
     
@@ -59,7 +62,7 @@ class deepResUnet(nn.Module):
         Y2 = self.decoding2(Y2) + Y2
         Y3 = torch.cat(self.upsamp(Y2), y1)
         Y3 = self.decoding3(Y3) + Y3
-        y = self.conv(Y3)
+        y = self.convlast(Y3)
         y = self.sigmoid(y)
         
         return y
