@@ -51,37 +51,30 @@ class deepResUnet(nn.Module):
         self.conv4 = nn.Conv2d(256, 512, kernel_size=1, stride=2)
         
         self.conv5 = nn.Conv2d(256, 512, kernel_size=1)
+        self.conv6 = nn.Conv2d(128, 256, kernel_size=1)
+        self.conv7 = nn.Conv2d(64, 128, kernel_size=1)
            
     def forward(self, x):
         # encoding
-        #print(x.shape)
-        
-        #print(self.conv1(x).shape)
-        #print(self.encoding1(x).shape)
         y1 = self.encoding1(x) + self.conv1(x)
         
-        #print(self.conv2(y1).shape)
-        #print(self.encoding2(y1).shape)
         y2 = self.encoding2(y1) + self.conv2(y1)
         
-        #print(self.conv3(y2).shape)
-        #print(self.encoding3(y2).shape)
         y3 = self.encoding3(y2) + self.conv3(y2)
     
         # bridge
         y_bridge = self.bridge(y3) + self.conv4(y3)
 
         # decoding
-        #print(self.upsamp(y_bridge).shape)
-        #print(y3.shape)
-        Y1 = torch.cat((self.upsamp(y_bridge), self.conv5(y3))) #MAKE SURE THIS IS BEING CORRECTLY CONCATENATED   ,dim=1? or 0?
-        Y1 = self.decoding1(Y1) + nn.Conv2d(512,256, kernel_size=1)(Y1)
-        print(self.upsamp(Y1).shape)
-        print(y2.shape)
-        Y2 = torch.cat(self.upsamp(Y1), nn.Conv2d(128,256, kernel_size=1)(y2))
-        Y2 = self.decoding2(Y2) + nn.Conv2d(256,128, kernel_size=1)(Y2)
-        Y3 = torch.cat(self.upsamp(Y2), nn.Conv2d(64,128, kernel_size=1)(y1))
-        Y3 = self.decoding3(Y3) + nn.Conv2d(128,64, kernel_size=1)(Y3)
+        Y1 = torch.cat((self.upsamp(y_bridge), self.conv5(y3)), 0)
+        Y1 = self.decoding1(Y1) + nn.Conv2d(512, 256, kernel_size=1)(Y1)
+        
+        Y2 = torch.cat((self.upsamp(Y1), self.conv6(y3)), 0)
+        Y2 = self.decoding2(Y2) + nn.Conv2d(256, 128, kernel_size=1)(Y2)
+
+        Y3 = torch.cat((self.upsamp(Y2),  self.conv7(y3)), 0)
+        Y3 = self.decoding3(Y3) + nn.Conv2d(128, 64, kernel_size=1)(Y3)
+
         y = self.convlast(Y3)
         y = self.sigmoid(y)
         
