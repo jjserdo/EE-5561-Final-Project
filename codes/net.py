@@ -8,6 +8,7 @@ adapted by Ricardo
 
 #### IMPORT LIBRARIES ####
 import torch
+from torchvision import datasets
 from torchvision.transforms import ToTensor
 import matplotlib.pyplot as plt
 import torch.nn as nn
@@ -16,13 +17,13 @@ import numpy as np
 #### Residual Block
 def res_block(in_channels, out_channels, strides, first=False):
     layers = []
-    if first:
+    if first==False:
         layers.append(nn.BatchNorm2d(in_channels))
         layers.append(nn.ReLU())
-    layers.append(nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=strides[0]))
+    layers.append(nn.Conv2d(in_channels, out_channels,kernel_size=3, stride=strides[0],  padding=1))
     layers.append(nn.BatchNorm2d(out_channels))
     layers.append(nn.ReLU())
-    layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=strides[1]))
+    layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=strides[1],  padding=1))
     
     return nn.Sequential(*layers)
         
@@ -43,6 +44,7 @@ class deepResUnet(nn.Module):
            
     def forward(self, x):
         # encoding
+        a1 = self.encoding1(x)
         y1 = self.encoding1(x) + x              #ERROR IN THIS LINE. CHECK DIMENSIONS AND CHANGE THE ENCODING BLOCKS
         y2 = self.encoding2(y1) + y1
         y3 = self.encoding3(y2) + y2
@@ -51,7 +53,7 @@ class deepResUnet(nn.Module):
         y_bridge = self.bridge(y3) + y3
 
         # decoding
-        Y1 = torch.cat((self.upsamp(y_bridge), y3)) #MAKE SURE THIS IS BEING CORRECTLY CONCATENATED
+        Y1 = torch.cat((self.upsamp(y_bridge), y3)) #MAKE SURE THIS IS BEING CORRECTLY CONCATENATED   ,dim=1? or 0?
         Y1 = self.decoding1(Y1) + Y1
         Y2 = torch.cat(self.upsamp(Y1), y2)
         Y2 = self.decoding2(Y2) + Y2
