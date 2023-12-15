@@ -69,10 +69,10 @@ class deepResUnet(nn.Module):
         Y1 = torch.cat((self.upsamp(y_bridge), self.conv5(y3)), 0)
         Y1 = self.decoding1(Y1) + nn.Conv2d(512, 256, kernel_size=1)(Y1)
         
-        Y2 = torch.cat((self.upsamp(Y1), self.conv6(y3)), 0)
+        Y2 = torch.cat((self.upsamp(Y1), self.conv6(y2)), 0)
         Y2 = self.decoding2(Y2) + nn.Conv2d(256, 128, kernel_size=1)(Y2)
 
-        Y3 = torch.cat((self.upsamp(Y2),  self.conv7(y3)), 0)
+        Y3 = torch.cat((self.upsamp(Y2),  self.conv7(y1)), 0)
         Y3 = self.decoding3(Y3) + nn.Conv2d(128, 64, kernel_size=1)(Y3)
 
         y = self.convlast(Y3)

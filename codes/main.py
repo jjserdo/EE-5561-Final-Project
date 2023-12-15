@@ -41,7 +41,7 @@ transform = v2.Compose([
 
 data_full = []
 # Now let's transform all of our images in the ToTensor type as required for pytorch:
-for i in range(len(image_list)-1):
+for i in range(5): #len(image_list)-1):
     img_name = os.path.join(orig_imag_path, image_list[i])
     mask_name = os.path.join(imag_segmented_path, mask_list[i])
     image = transform(Image.open(img_name).convert("RGB"))
@@ -50,7 +50,7 @@ for i in range(len(image_list)-1):
     data_full.append((image,mask))
 
 test_data = []
-for i in range(len(test_image_list)-1):
+for i in range(5): #len(test_image_list)-1):
     img_name_test = os.path.join(test_images, test_image_list[i])
     image_test = transform(Image.open(img_name_test).convert("RGB"))
 
@@ -73,7 +73,7 @@ train_data = data_full[:train_size]
 valid_data = data_full[train_size:]
 
 
-batch_size = 100
+batch_size = 1
 
 loaders = {'train': torch.utils.data.DataLoader(train_data,
                                                 batch_size = batch_size,
@@ -108,7 +108,7 @@ learning_rate = 0.1
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
 # define epoch number
-num_epochs = 10
+num_epochs = 2
 
 # initialize the loss
 loss_list = []
