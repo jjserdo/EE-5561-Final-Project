@@ -25,7 +25,7 @@ def res_block(in_channels, out_channels, strides, first=False):
     layers.append(nn.ReLU())
     layers.append(nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=strides[1],  padding=1))
     
-    return nn.Sequential(*layers)
+    return nn.Sequential(*layers) 
         
 
 class deepResUnet(nn.Module):
@@ -34,7 +34,9 @@ class deepResUnet(nn.Module):
         self.encoding1 = res_block(in_channels, 64, [1,1], first=True)
         self.encoding2 = res_block(64, 128, [2,1])
         self.encoding3 = res_block(128, 256, [2,1])
+        
         self.bridge = res_block(256, 512, [2,1])
+        
         self.decoding1 = res_block(512, 256, [1,1])
         self.decoding2 = res_block(256, 128, [1,1])
         self.decoding3 = res_block(128, 64, [1,1])
@@ -42,26 +44,44 @@ class deepResUnet(nn.Module):
         self.convlast = nn.Conv2d(64,num_classes, kernel_size=1)
         self.sigmoid = nn.Sigmoid()
 
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
+        self.conv1 = nn.Conv2d(3, 64, kernel_size=1)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=1, stride=2)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=1, stride=2)
+        
+        self.conv4 = nn.Conv2d(256, 512, kernel_size=1, stride=2)
+        
+        self.conv5 = nn.Conv2d(256, 512, kernel_size=1)
            
     def forward(self, x):
         # encoding
-        a1 = self.encoding1(x)
-        #y1 = self.encoding1(x) + x              #ERROR IN THIS LINE. CHECK DIMENSIONS AND CHANGE THE ENCODING BLOCKS
+        #print(x.shape)
+        
+        #print(self.conv1(x).shape)
+        #print(self.encoding1(x).shape)
         y1 = self.encoding1(x) + self.conv1(x)
-        y2 = self.encoding2(y1) + y1
-        y3 = self.encoding3(y2) + y2
+        
+        #print(self.conv2(y1).shape)
+        #print(self.encoding2(y1).shape)
+        y2 = self.encoding2(y1) + self.conv2(y1)
+        
+        #print(self.conv3(y2).shape)
+        #print(self.encoding3(y2).shape)
+        y3 = self.encoding3(y2) + self.conv3(y2)
     
         # bridge
-        y_bridge = self.bridge(y3) + y3
+        y_bridge = self.bridge(y3) + self.conv4(y3)
 
         # decoding
-        Y1 = torch.cat((self.upsamp(y_bridge), y3)) #MAKE SURE THIS IS BEING CORRECTLY CONCATENATED   ,dim=1? or 0?
-        Y1 = self.decoding1(Y1) + Y1
-        Y2 = torch.cat(self.upsamp(Y1), y2)
-        Y2 = self.decoding2(Y2) + Y2
-        Y3 = torch.cat(self.upsamp(Y2), y1)
-        Y3 = self.decoding3(Y3) + Y3
+        #print(self.upsamp(y_bridge).shape)
+        #print(y3.shape)
+        Y1 = torch.cat((self.upsamp(y_bridge), self.conv5(y3))) #MAKE SURE THIS IS BEING CORRECTLY CONCATENATED   ,dim=1? or 0?
+        Y1 = self.decoding1(Y1) + nn.Conv2d(512,256, kernel_size=1)(Y1)
+        print(self.upsamp(Y1).shape)
+        print(y2.shape)
+        Y2 = torch.cat(self.upsamp(Y1), nn.Conv2d(256,128, kernel_size=1)(y2))
+        Y2 = self.decoding2(Y2) + nn.Conv2d(256,128, kernel_size=1)(Y2)
+        Y3 = torch.cat(self.upsamp(Y2), nn.Conv2d(128,64, kernel_size=1)(y1))
+        Y3 = self.decoding3(Y3) + nn.Conv2d(128,64, kernel_size=1)(Y3)
         y = self.convlast(Y3)
         y = self.sigmoid(y)
         

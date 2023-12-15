@@ -35,7 +35,7 @@ test_image_list = sorted(os.listdir(test_images))
 
 # We'll transform it into a ToTensor and the images have different sizes, so we need to resize. I set it as 256.
 transform = v2.Compose([
-    v2.Resize((256, 256)),
+    v2.Resize((224, 224)),
     v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
 ])
 
@@ -63,8 +63,6 @@ plt.imshow(data_full[0][0].permute(1, 2, 0))  # when we transform int ToTensor t
 plt.axis('off')
 plt.show()
 
-
-"""
 ### SPLIT DATASET ####
 # train, test, validation separation
 
@@ -250,4 +248,3 @@ print('Iterations: {} Loss: {}. Test Accuracy: {}'.format(iter, loss.item(), acc
 # test images
 
 a=1
-"""
