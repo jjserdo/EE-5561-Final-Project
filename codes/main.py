@@ -17,6 +17,7 @@ from PIL import Image
 from net import *
 import os
 
+# something up with life
 
 #### LOAD DATASET ####
 orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
