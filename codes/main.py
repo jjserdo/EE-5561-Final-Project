@@ -16,15 +16,16 @@ import numpy as np
 from PIL import Image
 from net import *
 import os
+import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #### LOAD DATASET ####
 orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
 imag_segmented_path = r"C:\Users\rickl\Desktop\Camouflage\GT"       #Using the mask images here
 test_images = r"C:\Users\rickl\Desktop\Camouflage\Images\Test"      #Using the test images here
-#orig_imag_path = "..\data\Camouflage\Images\Train" 
-#imag_segmented_path =  "..\data\Camouflage\GT"
-#test_images = "..\data\Camouflage\Images\Test"
-
+orig_imag_path = "..\data\Camouflage\Images\Train" 
+imag_segmented_path =  "..\data\Camouflage\GT"
+test_images = "..\data\Camouflage\Images\Test"
 
 
 # We need to make sure that the files will be organized in the same way in both folders for matching them:
@@ -35,9 +36,9 @@ test_image_list = sorted(os.listdir(test_images))
 # We'll transform it into a ToTensor and the images have different sizes, so we need to resize. I set it as 256.
 transform = v2.Compose([
     v2.Resize((256, 256)),
-    v2.ToTensor(),
+    v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
 ])
-"""
+
 data_full = []
 # Now let's transform all of our images in the ToTensor type as required for pytorch:
 for i in range(len(image_list)-1):
@@ -63,7 +64,7 @@ plt.axis('off')
 plt.show()
 
 
-
+"""
 ### SPLIT DATASET ####
 # train, test, validation separation
 
