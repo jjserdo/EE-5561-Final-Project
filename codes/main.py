@@ -20,13 +20,15 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #### LOAD DATASET ####
-orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
-imag_segmented_path = r"C:\Users\rickl\Desktop\Camouflage\GT"       #Using the mask images here
-test_images = r"C:\Users\rickl\Desktop\Camouflage\Images\Test"      #Using the test images here
-orig_imag_path = "..\data\Camouflage\Images\Train" 
-imag_segmented_path =  "..\data\Camouflage\GT"
-test_images = "..\data\Camouflage\Images\Test"
-
+# orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
+# imag_segmented_path = r"C:\Users\rickl\Desktop\Camouflage\GT"       #Using the mask images here
+# test_images = r"C:\Users\rickl\Desktop\Camouflage\Images\Test"      #Using the test images here
+# orig_imag_path = "..\data\Camouflage\Images\Train" 
+# imag_segmented_path =  "..\data\Camouflage\GT"
+# test_images = "..\data\Camouflage\Images\Test"
+orig_imag_path = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\Images\Train"  #Using the animal images here
+imag_segmented_path = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\GT"       #Using the mask images here
+test_images = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\Images\Test"      #Using the test images here
 
 # We need to make sure that the files will be organized in the same way in both folders for matching them:
 image_list = sorted(os.listdir(orig_imag_path))
@@ -36,7 +38,7 @@ test_image_list = sorted(os.listdir(test_images))
 # We'll transform it into a ToTensor and the images have different sizes, so we need to resize. I set it as 256.
 transform = v2.Compose([
     v2.Resize((224, 224)),
-    v2.Compose([v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]),
+    v2.Compose([v2.ToPILImage(), v2.ToTensor()]),
 ])
 
 data_full = []
@@ -66,6 +68,7 @@ plt.show()
 ### SPLIT DATASET ####
 # train, test, validation separation
 
+data_full = data_full[0:50]
 train_size = int(0.8 * len(data_full))  #Let's use 80% of the data as training and 20% as validation --> we can adjust as we want...
 valid_size = len(data_full) - train_size
 
@@ -75,19 +78,15 @@ valid_data = data_full[train_size:]
 
 batch_size = 100
 
-loaders = {'train': torch.utils.data.DataLoader(train_data,
+train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size = batch_size,
-                                                shuffle=True),
-           'test': torch.utils.data.DataLoader(test_data,
+                                                shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_data,
                                                 batch_size = batch_size,
-                                                shuffle=True),
-           'valid': torch.utils.data.DataLoader(valid_data,
+                                                shuffle=True)
+valid_loader = torch.utils.data.DataLoader(valid_data,
                                                 batch_size = batch_size,
-                                                shuffle=True)}
-
-#visualize the dictionary
-train_part = loaders.get('train')
-data2 = train_part.dataset
+                                                shuffle=True)
 
 # plt.imshow(data2[0][0].permute(1, 2, 0))
 # plt.axis('off')
@@ -95,9 +94,8 @@ data2 = train_part.dataset
 
 
 ### SETUP MODEL ####
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = deepResUnet(3,1)
-model.to(device)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = deepResUnet(3,1).to(device)
 
 # define the loss function
 criterion = nn.MSELoss()
@@ -121,15 +119,11 @@ loss_list_mean = []
 # Where N is the number of training samples.
 iter = 0
 for epoch in range(num_epochs):
-
     print('Epoch: {}'.format(epoch))
-
     loss_buff = []
-
-    for i, (images, masks) in enumerate(loaders['train']):
-
+    for images,masks in train_loader:
         # getting the images and labels from the training dataset
-        images = images.requires_grad_().to(device)
+        images = images.to(device)
         masks = masks.to(device)
 
         # clear the gradients
@@ -167,7 +161,7 @@ for epoch in range(num_epochs):
             correct = 0
             total = 0
 
-            for i, (images, labels) in enumerate(loaders['valid']):
+            for (images, labels) in valid_loader:
                 # getting the images and labels from the training dataset
                 images = images.to(device)
                 labels = labels.to(device)
@@ -202,36 +196,35 @@ plt.plot(loss_list_mean)
 #### VISUALIZE LOSS(?) ####
 
 #### TEST MODEL ####
+model.eval()  # Set the model to evaluation mode
+
 correct = 0
 total = 0
-plot_rows = 5
-plot_columns = 5
 
-figure, axes = plt.subplots(plot_rows, plot_columns, figsize=(15, 15))  #set subplots
-
-for i, (images, labels) in enumerate(loaders['valid']):
-    # getting the images and labels from the training dataset
+# Iterate through the test DataLoader
+for (images, masks) in test_loader:
+    # Getting the images and masks from the test dataset
     images = images.to(device)
-    labels = labels.to(device)
+    masks = masks.to(device)
 
-    # clear the gradients
-    optimizer.zero_grad()
+    # No need to clear gradients or call optimizer.zero_grad() during testing
 
-    # call the NN
+    # Call the NN
     outputs = model(images)
 
-    # get the predictions
-    _, predicted = torch.max(outputs.data, 1)
+    # Assuming your model outputs probabilities, you can convert them to class predictions
+    predicted = (outputs > 0.5).float()  # Binary threshold for binary segmentation
 
-    total += labels.size(0)
+    # Update total count
+    total += masks.numel()  # Total number of pixels
 
-    correct += (predicted == labels).sum()
+    # Update correct count by comparing predicted and ground truth masks
+    correct += (predicted == masks).sum().item()
 
-accuracy = 100 * correct / total
+# Calculate pixel-wise accuracy
+pixel_accuracy = 100 * correct / total
 
-print('Iterations: {} Loss: {}. Test Accuracy: {}'.format(iter, loss.item(), accuracy))
-
-
+print('Pixel-wise Accuracy: {:.2f}%'.format(pixel_accuracy))
 
 #### SAVE MODEL ####
 # fname =
@@ -246,5 +239,3 @@ print('Iterations: {} Loss: {}. Test Accuracy: {}'.format(iter, loss.item(), acc
 # model.eval()
 
 # test images
-
-a=1
