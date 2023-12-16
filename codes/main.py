@@ -20,20 +20,16 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 #### LOAD DATASET ####
-# orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
-# imag_segmented_path = r"C:\Users\rickl\Desktop\Camouflage\GT"       #Using the mask images here
-# test_images = r"C:\Users\rickl\Desktop\Camouflage\Images\Test"      #Using the test images here
-# orig_imag_path = "..\data\Camouflage\Images\Train" 
-# imag_segmented_path =  "..\data\Camouflage\GT"
-# test_images = "..\data\Camouflage\Images\Test"
-orig_imag_path = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\Images\Train"  #Using the animal images here
-imag_segmented_path = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\GT"       #Using the mask images here
-test_images = r"C:\Users\sheno\OneDrive\Documents\PIV\CAMO-COCO-V.1.0\CAMO-COCO-V.1.0-CVIU2019\Camouflage\Images\Test"      #Using the test images here
+orig_imag_path = r"C:\Users\rickl\Desktop\Camouflage\Images\Train"  #Using the animal images here
+imag_segmented_path = r"C:\Users\rickl\Desktop\Camouflage\GT"       #Using the mask images here
+test_images = r"C:\Users\rickl\Desktop\Camouflage\Images\Test"      #Using the test images here
+orig_imag_path = "..\data\Camouflage\images" 
+imag_segmented_path =  "..\data\Camouflage\mask"
 
 # We need to make sure that the files will be organized in the same way in both folders for matching them:
 image_list = sorted(os.listdir(orig_imag_path))
 mask_list = sorted(os.listdir(imag_segmented_path))
-test_image_list = sorted(os.listdir(test_images))
+#test_image_list = sorted(os.listdir(test_images))
 
 # We'll transform it into a ToTensor and the images have different sizes, so we need to resize. I set it as 256.
 transform = v2.Compose([
@@ -43,6 +39,7 @@ transform = v2.Compose([
 
 data_full = []
 # Now let's transform all of our images in the ToTensor type as required for pytorch:
+#for i in range(10):
 for i in range(len(image_list)-1):
     img_name = os.path.join(orig_imag_path, image_list[i])
     mask_name = os.path.join(imag_segmented_path, mask_list[i])
@@ -51,13 +48,14 @@ for i in range(len(image_list)-1):
 
     data_full.append((image,mask))
 
-test_data = []
-for i in range(len(test_image_list)-1):
-    img_name_test = os.path.join(test_images, test_image_list[i])
-    image_test = transform(Image.open(img_name_test).convert("RGB"))
+#test_data = []
+#for i in range(10):
+#for i in range(len(test_image_list)-1):
+#    img_name_test = os.path.join(test_images, test_image_list[i])
+#    image_test = transform(Image.open(img_name_test).convert("RGB"))
 
-    test_data.append(image_test)
 
+#    test_data.append(image_test)
 
 # visualize the data
 #The data_full explained: data_full[0][0] --> first [0] is the image being observed (lines) ; second [0] is the column, indicates if we are looking the image (0) or the mask (1).
@@ -75,16 +73,16 @@ valid_size = len(data_full) - train_size
 train_data = data_full[:train_size]
 valid_data = data_full[train_size:]
 
-
-batch_size = 100
+batch_size = 50
+#batch_size = 40
 
 train_loader = torch.utils.data.DataLoader(train_data,
                                                 batch_size = batch_size,
-                                                shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_data,
-                                                batch_size = batch_size,
-                                                shuffle=True)
-valid_loader = torch.utils.data.DataLoader(valid_data,
+                                                shuffle=True),
+#          'test': torch.utils.data.DataLoader(test_data,
+#                                              batch_size = batch_size,
+#                                               shuffle=True),
+           'valid': torch.utils.data.DataLoader(valid_data,
                                                 batch_size = batch_size,
                                                 shuffle=True)
 
@@ -102,11 +100,11 @@ criterion = nn.MSELoss()
 
 
 # define the optimizer
-learning_rate = 0.1
+learning_rate = 0.001
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
 # define epoch number
-num_epochs = 10
+num_epochs = 30
 
 # initialize the loss
 loss_list = []
@@ -131,7 +129,8 @@ for epoch in range(num_epochs):
 
         # call the NN
         outputs = model(images)
-
+        #print(f"shape of outputs: {outputs.shape}")
+        #print(f"shape of masks: {masks.shape}")
         # loss calculation
         loss = criterion(outputs, masks)
         loss_buff = np.append(loss_buff, loss.item())
@@ -144,14 +143,10 @@ for epoch in range(num_epochs):
         # update parameters
         optimizer.step()
 
-        iter += 10
+        iter += 1
 
         if iter % 10 == 0:
             print('Iterations: {}'.format(iter))
-
-
-
-
 
 #### VALIDATION #### ? how for image segmentation
 
@@ -192,7 +187,6 @@ plt.plot(loss_list)
 plt.plot(loss_list_mean)
 
 
-
 #### VISUALIZE LOSS(?) ####
 
 #### TEST MODEL ####
@@ -221,21 +215,6 @@ for (images, masks) in test_loader:
     # Update correct count by comparing predicted and ground truth masks
     correct += (predicted == masks).sum().item()
 
-# Calculate pixel-wise accuracy
-pixel_accuracy = 100 * correct / total
-
-print('Pixel-wise Accuracy: {:.2f}%'.format(pixel_accuracy))
-
 #### SAVE MODEL ####
-# fname =
+# fname = "weights"
 # torch.save(model.state_dict(), fname + ".h5")
-
-#### (OPTION) LOAD MODEL ####
-# fname =
-# device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# model = deepResUnet()
-# model.to(device)
-# model.load_state_dict(torch.load(fname + ".h5"))
-# model.eval()
-
-# test images
