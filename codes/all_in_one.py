@@ -146,7 +146,7 @@ for i, (input_image, target_mask, output_mask) in enumerate(test_examples[:5], 1
     plt.axis("off")
 
     plt.subplot(5, 3, 3 * i)
-    plt.imshow(output_mask, cmap="gray")
+    plt.imshow(output_mask > 0.5, cmap="gray")
     plt.title(f"Example {i}: Predicted Mask")
     plt.axis("off")
 
