@@ -39,8 +39,8 @@ transform = v2.Compose([
 
 data_full = []
 # Now let's transform all of our images in the ToTensor type as required for pytorch:
-for i in range(10):
-#for i in range(len(image_list)-1):
+#for i in range(10):
+for i in range(len(image_list)-1):
     img_name = os.path.join(orig_imag_path, image_list[i])
     mask_name = os.path.join(imag_segmented_path, mask_list[i])
     image = transform(Image.open(img_name).convert("RGB"))
@@ -72,7 +72,7 @@ valid_size = len(data_full) - train_size
 train_data = data_full[:train_size]
 valid_data = data_full[train_size:]
 
-batch_size = 5
+batch_size = 50
 #batch_size = 40
 
 loaders = {'train': torch.utils.data.DataLoader(train_data,
@@ -108,7 +108,7 @@ learning_rate = 0.001
 optimizer = torch.optim.SGD(model.parameters(), lr=learning_rate)
 
 # define epoch number
-num_epochs = 1
+num_epochs = 30
 
 # initialize the loss
 loss_list = []
@@ -137,8 +137,8 @@ for epoch in range(num_epochs):
 
         # call the NN
         outputs = model(images)
-        print(f"shape of outputs: {outputs.shape}")
-        print(f"shape of masks: {masks.shape}")
+        #print(f"shape of outputs: {outputs.shape}")
+        #print(f"shape of masks: {masks.shape}")
         # loss calculation
         loss = criterion(outputs, masks)
         loss_buff = np.append(loss_buff, loss.item())
@@ -151,7 +151,7 @@ for epoch in range(num_epochs):
         # update parameters
         optimizer.step()
 
-        iter += 10
+        iter += 1
 
         if iter % 10 == 0:
             print('Iterations: {}'.format(iter))
