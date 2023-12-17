@@ -74,18 +74,40 @@ class DeepResUNet(nn.Module):
         x4 = self.down3(x3)
         x5 = self.down4(x4)
 
-        x = self.up1(x5, x4)
-        x = self.up2(x, x3)
-        x = self.up3(x, x2)
-        x = self.up4(x, x1)
+        up1 = self.up1(x5, x4)
+        up2 = self.up2(up1, x3)
+        up3 = self.up3(up2, x2)
+        up4 = self.up4(up3, x1)
 
-        output = self.outc(x)
-        return output
+        output = self.outc(up4)
+        
+        return {
+            'output': output,
+            'up1': up1,
+            'up2': up2,
+            'up3': up3,
+            'up4': up4,
+        }
 
 # Instantiate the model with the modified architecture
 in_channels = 3  # Adjust based on your dataset
 out_channels = 1  # Adjust based on your task (e.g., binary segmentation)
 model = DeepResUNet(in_channels, out_channels)
 
+# Forward pass to get the intermediate outputs
+input_tensor = torch.randn((1, in_channels, 256, 256))  # Example input tensor
+outputs = model(input_tensor)
+
+# Access the intermediate outputs
+output = outputs['output']
+up1 = outputs['up1']
+up2 = outputs['up2']
+up3 = outputs['up3']
+up4 = outputs['up4']
+# Instantiate the model with the modified architecture
+in_channels = 3  # Adjust based on your dataset
+out_channels = 1  # Adjust based on your task (e.g., binary segmentation)
+model = DeepResUNet(in_channels, out_channels)
+
 # Print the summary of the modified model
-print(model)
+# print(model)
